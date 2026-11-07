@@ -13,7 +13,9 @@ export interface WheelReading {
   settledRound: string | null;
   freshness: string;
   counterEpoch: string;
-  /** Age of the measurement when the server generated the response, in ms (server clock on both sides). */
+  /** Server observation timestamp in Unix milliseconds, used to recognize repeated measurements. */
+  observedAt: number;
+  /** Measurement age at receipt, including response transit/cache age and prior monotonic aging. */
   ageAtResponseMs: number;
   staleAfterMs: number;
   /** Local performance.now() when the response arrived. */
@@ -27,7 +29,7 @@ const str = (v: unknown): string | null => (typeof v === "string" && v.length > 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 /** Read the fields Squeek DJ needs from a /v1/status body. Returns null when the measurement is missing or malformed. */
-export function parseStatus(body: unknown, receivedAt: number): WheelReading | null {
+export function parseStatus(body: unknown, receivedAt: number, previous: WheelReading | null = null): WheelReading | null {
   if (!isRecord(body) || !isRecord(body.measurement)) return null;
   const m = body.measurement;
   const rpmMilli = num(m.rpmMilli);
@@ -37,8 +39,16 @@ export function parseStatus(body: unknown, receivedAt: number): WheelReading | n
 
   const observed = Date.parse(str(m.observedAt) ?? "");
   const generated = Date.parse(str(body.generatedAt) ?? "");
-  const ageAtResponseMs =
-    Number.isFinite(observed) && Number.isFinite(generated) ? Math.max(0, generated - observed) : Number.POSITIVE_INFINITY;
+  const counterEpoch = str(m.counterEpoch) ?? "";
+  let ageAtResponseMs =
+    Number.isFinite(observed) && Number.isFinite(generated)
+      ? Math.max(0, generated - observed) + Math.max(0, Date.now() - generated)
+      : Number.POSITIVE_INFINITY;
+  // A successful poll proves reachability, not a new observation. Keep aging the same
+  // measurement even if a cached response or a backwards wall-clock adjustment arrives.
+  if (previous && previous.observedAt === observed && previous.counterEpoch === counterEpoch) {
+    ageAtResponseMs = Math.max(ageAtResponseMs, readingAge(previous, receivedAt));
+  }
 
   const anchor = isRecord(body.builder) && isRecord(body.builder.anchor) ? body.builder.anchor : null;
   return {
@@ -48,7 +58,8 @@ export function parseStatus(body: unknown, receivedAt: number): WheelReading | n
     blockHeight: anchor ? str(anchor.blockHeight) : null,
     settledRound: anchor ? str(anchor.settledThroughRound) : null,
     freshness: str(m.freshness) ?? "unknown",
-    counterEpoch: str(m.counterEpoch) ?? "",
+    counterEpoch,
+    observedAt: observed,
     ageAtResponseMs,
     staleAfterMs: (num(m.staleAfterSeconds) ?? 120) * 1000,
     receivedAt,

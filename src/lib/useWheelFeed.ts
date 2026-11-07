@@ -21,6 +21,7 @@ export function useWheelFeed(): WheelFeed {
     let stopped = false;
     let timer: number | undefined;
     let controller: AbortController | null = null;
+    let previousReading: WheelReading | null = null;
 
     const poll = async () => {
       if (document.hidden) {
@@ -32,9 +33,10 @@ export function useWheelFeed(): WheelFeed {
       try {
         const res = await fetch(STATUS_URL, { cache: "no-store", signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const parsed = parseStatus(await res.json(), performance.now());
+        const parsed = parseStatus(await res.json(), performance.now(), previousReading);
         if (!parsed) throw new Error("Unreadable status");
         if (!stopped) {
+          previousReading = parsed;
           setReading(parsed);
           setFailures(0);
           setRevision((r) => r + 1);

@@ -8,3 +8,23 @@ node_modules/
 coverage/
 # Scratch checks are local only.
 test/scratch/
+
+# Explicit delivery path budgets (bytes; total 598016 = 584 KiB).
+# /.imd-responses.json: 8192
+# /artifacts/validation.md: 32768
+# /artifacts/evidence/revision-results.json: 32768
+# /artifacts/evidence/ready-390.png: 131072
+# /artifacts/evidence/ready-1440.png: 131072
+# /artifacts/evidence/stale-390.png: 131072
+# /artifacts/evidence/playing-390.png: 131072
+!/.imd-responses.json
+!/artifacts/
+/artifacts/*
+!/artifacts/validation.md
+!/artifacts/evidence/
+/artifacts/evidence/*
+!/artifacts/evidence/revision-results.json
+!/artifacts/evidence/ready-390.png
+!/artifacts/evidence/ready-1440.png
+!/artifacts/evidence/stale-390.png
+!/artifacts/evidence/playing-390.png

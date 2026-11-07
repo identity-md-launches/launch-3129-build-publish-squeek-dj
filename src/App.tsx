@@ -102,12 +102,13 @@ export default function App() {
       const playMode = live.current.mode;
       const final = { ...engine.stats };
       const newBest = saveBest(playMode, final.score);
+      const finishedAt = live.current.phase === "paused" ? pausedAt.current : performance.now();
       if (newBest) setBest((b) => ({ ...b, [playMode]: final.score }));
       setSummary({
         mode: playMode,
         reason,
         stats: final,
-        durationMs: performance.now() - startedAt.current - pausedTotal.current,
+        durationMs: finishedAt - startedAt.current - pausedTotal.current,
         distanceMm: tallyHasReading.current ? tally.current.totalMm : null,
         newBest,
       });
