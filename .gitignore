@@ -1,0 +1,10 @@
+# Dependencies and caches stay out of Git at every nesting level.
+node_modules/
+.npm/
+.cache/
+*.tgz
+*.log
+.vite/
+coverage/
+# Scratch checks are local only.
+test/scratch/
