@@ -1,5 +1,64 @@
 # Revision validation
 
+## Current revision: 320px header overflow
+
+Complete for finding `1da0d25e07953ef3dd8c0abcf387658c5b6ee320897eaf56c6cfcdef35ff80bb`. The only application-source change is the `max-width: 22rem` rule at `src/styles.css:655`: header inline padding 8px, gap 4px, and brand size 1rem, all using existing tokens. The production export was rebuilt; gameplay, data handling and package files were preserved. These are worker-run results, not independent certification.
+
+### Reproduction and final measurements
+
+The unchanged original export was copied to scratch before editing and served at `/preview/`. Chromium mobile/touch contexts used deviceScaleFactor 1, with the status request aborted to reach Offline and no scrolling before measurement. The default system font produced no horizontal overflow. Selecting DejaVu Sans as `system-ui` through a disposable Fontconfig file reproduced the reported defect without changing the application or its CSS: client width 320px, document width 341px, help right edge 341px. That screenshot visibly clipped How to play. The font-specific difference is why both profiles were checked.
+
+| Viewport | Original document width, DejaVu Sans | Final document width | Final help right edge |
+| --- | --- | --- | --- |
+| 320×700 | 341px | 320px | 312px |
+| 352×700 | 352px | 352px | 344px |
+| 353×844 | 353px | 353px | 341px |
+| 390×844 | 390px | 390px | 374px |
+| 768×844 | 768px | 768px | 752px |
+| 1440×844 | 1440px | 1440px | 1424px |
+
+All six widths also passed using the default font profile. Both utilities remain visible without overlapping the brand; their 44px heights are preserved. Sound remains 36px wide on narrow screens. The game rectangle exactly matched the original at every tested width in each font profile. Header rectangles above 352px also matched. Screenshots of the final 320, 390 and 1440px views were inspected; the main action remains on the first screen at 390px. At 320×700 the game begins at y=329.765625px and is 296×360px before and after the fix.
+
+### Executed checks
+
+Dependencies were installed into `test/scratch/build/` from the unchanged lockfile. Only scratch dependency directories were written. The final scratch source was compared with repository source; its built export was copied to root `dist/`.
+
+| Command/check | Actual result |
+| --- | --- |
+| `npm ci --prefix test/scratch/build --cache test/scratch/npm --no-audit --no-fund` | Exit 0; 132 packages installed. |
+| `npm run typecheck --prefix test/scratch/build` | Exit 0. |
+| `npm test --prefix test/scratch/build` | Exit 0; all 24 existing tests passed in three files. |
+| `npm run build --prefix test/scratch/build` | Exit 0; TypeScript and Vite completed, 38 modules transformed. HTML 1.58 kB, CSS 10.54 kB, JS 166.91 kB, plus the existing favicon and share image. |
+| `node test/scratch/header-check.mjs before wide` / `after wide` | Both completed successfully with the wider system font selected. Original 341px overflow reproduced; all six final viewport and interaction checks passed. |
+| `node test/scratch/header-check.mjs before default` / `after default` | Both completed successfully; all six final viewport and interaction checks passed. |
+| Pinned `taste.mjs --offline --out test/scratch/taste` | Completed unmodified through the installed Playwright module. 15/16 checks passed; no horizontal overflow, text overlaps, floating-control overlaps, script exceptions or missing local files. Layout still reports the previously documented hint clipping at 320×700. |
+| Pinned `taste.mjs test/scratch/baseline/dist --offline --out test/scratch/taste-before-wide` | Completed with DejaVu Sans selected as system font; independently measured the original 341px document width and the same existing hint clipping. |
+
+Browser scripts tested help by touch and keyboard, Escape/Close and focus return, sound default/off/on and persistence after reload, and Practice start/pause/resume/end at each width. No page exceptions or missing local resources occurred. All browser checks used a blocked API, so no current live service availability is claimed. Browser sessions and their preview servers were closed by the scripts.
+
+### Better Interface coverage and limits
+
+The pinned workflow and six domain principles were applied to the affected header and checked against the production export.
+
+| Domain | Checked in this revision | Limits |
+| --- | --- | --- |
+| Accessibility | Native utility buttons, preserved accessible names and toggle state; touch help, keyboard open/close and focus restoration; no overlapping targets. | No screen-reader, physical-device, full accessibility audit or native 200% zoom session. |
+| Layout | Reproduced and fixed the header overflow; measured six widths and the breakpoint boundary with both font profiles; compared game/header rectangles; viewed 320/390/1440 screenshots. | Existing hint clipping at 320×700 remains outside the supplied finding; the request explicitly preserves the game position. |
+| Writing | Utility labels, Practice label and offline guidance retain their established meaning. | No copy changes or renewed review of every gameplay message. |
+| Typography | Existing `--text-body` token reused for the narrow brand; wider and default system-font metrics checked; probe passes type sizes, families, weights and tracking. | Platform glyphs vary; not an exhaustive OS/font matrix. |
+| Colors | Existing semantic colors retained; probe passes measured solid-background text contrast at its 4.5:1 normal / 3:1 large thresholds. | Fourteen composited/media text boxes are excluded by the probe; no contrast claim for those pairs. |
+| UI | Help, sound, offline ready state and Practice/pause/resume/end exercised; probe passes motion, component/chrome and share metadata checks. | No audible quality/latency or slow-motion review. WebKit was not checked in this round; the browser tool could not launch, so the installed Chromium headless runtime was used directly. |
+
+The remaining layout probe failure is the same 26px hint clipping documented in the earlier round, rather than the reported header overflow. It was visible in the original and final 320×700 screenshots and is left outside this bounded revision. No claim is made that all design checks pass.
+
+Compact before/after measurements and current probe results are appended under `headerRevision` in `evidence/revision-results.json`. Current screenshots and browser scripts are in disposable `test/scratch/header-*` and `test/scratch/taste/`, inspected locally and intentionally excluded from submission. Existing evidence below is retained as history. `.imd-responses.json` answers the current finding. Hosting and the canonical IMD URL remain IMD's post-submission steps.
+
+Packaging: final `dist/` has five files totaling 205,465 bytes and matches the tested final rebuild byte for byte. Every export file and the review response is included by the existing ignore rules; `.gitignore` and root package files are unchanged. The complete candidate bundle is below 1 MiB and within all existing per-path budgets. Scratch dependencies, caches and test scripts are excluded; no submodules or dependency archives are included. `git diff --check` passed.
+
+---
+
+The following sections record the earlier accepted revision. Their findings, outputs and command results are historical; the current header measurements and limitations above supersede their 320px-header statements.
+
 ## Scope and outcome
 
 All three supplied findings reproduced against the original committed export and were fixed. Runtime edits are limited to `src/lib/feed.ts`, `src/lib/useWheelFeed.ts` and `src/App.tsx`; the existing visual styling and rhythm engine are unchanged. The README, design documentation, regression tests, review responses and rebuilt `dist/` complete the revision handoff. These are worker-run results, not independent certification.
@@ -14,7 +73,7 @@ The site was served from the real `dist/` at a `/preview/` subpath for interacti
 | `13de8e5e…` — stale data shown Live, high | Chromium at 390×844: a response generated ten minutes earlier with a 601-second-old observation displayed Live / Measured 1 s ago and enabled live start. An initially fresh frozen response remained Live after 44 three-second clock advances and repeated successful polls. | `src/lib/feed.ts:40` now includes response age at receipt and retains monotonic age for the same observation and epoch. `src/lib/useWheelFeed.ts:24` keeps the preceding successful reading. Final export shows Stale / Measured 10 min ago for the old response, and Stale / Measured 2 min ago for the repeated response, with live starts disabled. A newer observation restores Live and live starts. |
 | `469b531e…` — paused time included, medium | Immediately pausing Practice, advancing 5.2 seconds and ending showed 0:05. Resuming and immediately pausing before ending showed 0:00. | `src/App.tsx:105` uses the pause timestamp when ending a paused set. Both browser paths now show 0:00. Three component tests also verify both paths and two pauses separated by three seconds of actual playing time, reported as 0:03. |
 
-Full IDs and verdicts are in `../.imd-responses.json`.
+The current `../.imd-responses.json` answers the newly reopened header finding; the table above retains the earlier findings' history.
 
 ## Commands and executed results
 

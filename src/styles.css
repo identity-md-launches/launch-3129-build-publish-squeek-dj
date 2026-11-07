@@ -651,6 +651,18 @@ a {
   }
 }
 
+/* Smallest phones: keep the brand and both utilities within the header. */
+@media (max-width: 22rem) {
+  .topbar {
+    padding-inline: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .brand {
+    font-size: var(--text-body);
+  }
+}
+
 /* Wide screens: wheel on the leading side, game in the middle, score on the trailing side. */
 @media (min-width: 60rem) {
   :root {
